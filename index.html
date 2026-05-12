@@ -3,35 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>볼링장 QR 실시간 주문</title>
+  <title>볼링장 QR 주문</title>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background:#f4f4f5; margin:0; padding:16px; color:#18181b; }
-    .wrap { max-width:1000px; margin:0 auto; }
-    .card { background:white; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+    body { font-family: Arial, sans-serif; background:#f4f4f5; margin:0; padding:16px; color:#111; }
+    .wrap { max-width:900px; margin:0 auto; }
+    .card { background:#fff; border-radius:14px; padding:16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
     h1,h2,h3 { margin:0 0 10px; }
-    .muted { color:#71717a; font-size:14px; }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .between { display:flex; justify-content:space-between; gap:10px; align-items:center; }
-    button { border:0; border-radius:12px; padding:10px 14px; cursor:pointer; font-weight:700; background:#18181b; color:white; }
-    button.gray { background:#e4e4e7; color:#18181b; }
-    button.red { background:#fee2e2; color:#b91c1c; }
+    .muted { color:#666; font-size:14px; }
+    input, select, textarea { width:100%; padding:12px; margin:6px 0; border:1px solid #ddd; border-radius:10px; font-size:16px; box-sizing:border-box; }
+    button { border:0; border-radius:10px; padding:10px 14px; background:#111; color:#fff; font-weight:bold; cursor:pointer; margin:3px; }
+    button.gray { background:#e5e7eb; color:#111; }
+    button.red { background:#fee2e2; color:#991b1b; }
     button.green { background:#dcfce7; color:#166534; }
-    input, select, textarea { width:100%; border:1px solid #d4d4d8; border-radius:12px; padding:11px; font-size:16px; }
-    textarea { min-height:75px; resize:vertical; }
-    .menu-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
-    .menu-item { border:1px solid #e4e4e7; border-radius:16px; padding:14px; }
-    .qty { display:flex; gap:8px; align-items:center; margin-top:10px; }
-    .qty button { width:38px; height:38px; padding:0; border-radius:50%; }
-    .cart-line, .order-line { display:flex; justify-content:space-between; gap:10px; margin:8px 0; }
-    .tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-    .tabs button.active { background:#18181b; color:white; }
-    .status { display:inline-block; border-radius:999px; padding:5px 10px; font-size:13px; font-weight:700; background:#fef3c7; color:#92400e; }
-    .status.done { background:#dcfce7; color:#166534; }
-    .status.cancel { background:#fee2e2; color:#991b1b; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .between { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+    .item { border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
     .hidden { display:none; }
-    .admin-grid { display:grid; grid-template-columns:1fr; gap:12px; }
-    @media(min-width:850px){ .admin-grid { grid-template-columns:1.2fr .8fr; } }
+    .line { display:flex; justify-content:space-between; margin:8px 0; }
+    .ok { color:#166534; font-weight:bold; }
+    .bad { color:#991b1b; font-weight:bold; }
   </style>
 </head>
 <body>
@@ -39,383 +30,341 @@
   <div class="card between">
     <div>
       <h1>볼링장 QR 주문</h1>
-      <div class="muted" id="topInfo">불러오는 중...</div>
+      <div id="status" class="muted">사이트 준비 중...</div>
     </div>
-    <button class="gray" onclick="goAdmin()">관리자</button>
+    <button class="gray" onclick="location.href='?admin=1'">관리자</button>
   </div>
 
-  <section id="customerPage">
+  <div id="customerPage">
     <div class="card">
-      <h2><span id="laneTitle">1</span>번 레인 주문</h2>
-      <div class="muted">메뉴를 선택하고 주문하기를 눌러주세요. 결제는 카운터에서 진행됩니다.</div>
+      <h2><span id="laneText">1</span>번 레인 주문</h2>
+      <p class="muted">메뉴를 선택하고 주문하기를 눌러주세요.</p>
     </div>
 
     <div class="card">
-      <div class="tabs" id="categoryTabs"></div>
-      <div class="menu-grid" id="menuList"></div>
+      <h2>메뉴</h2>
+      <div id="menuList" class="grid"></div>
     </div>
 
     <div class="card">
       <h2>주문 내역</h2>
       <div id="cartList" class="muted">선택한 메뉴가 없습니다.</div>
       <textarea id="requestText" placeholder="요청사항 예: 얼음컵 주세요"></textarea>
-      <div class="between" style="margin-top:12px;">
-        <strong>총 금액</strong>
-        <strong id="totalPrice">0원</strong>
-      </div>
-      <button style="width:100%; margin-top:12px; padding:15px;" onclick="submitOrder()">주문하기</button>
-      <p class="muted" id="customerNotice"></p>
+      <div class="between"><strong>총 금액</strong><strong id="totalText">0원</strong></div>
+      <button style="width:100%; padding:15px; margin-top:10px;" onclick="submitOrder()">주문하기</button>
     </div>
-  </section>
+  </div>
 
-  <section id="adminPage" class="hidden">
+  <div id="adminPage" class="hidden">
     <div id="loginBox" class="card">
       <h2>관리자 로그인</h2>
-      <p class="muted">초기 비밀번호는 <b>1234</b> 입니다. 코드 안의 ADMIN_PASSWORD 값을 바꾸면 됩니다.</p>
-      <input id="adminPw" type="password" placeholder="관리자 비밀번호" />
-      <button style="width:100%; margin-top:10px;" onclick="adminLogin()">로그인</button>
+      <p class="muted">비밀번호: 1234</p>
+      <input id="password" type="password" placeholder="비밀번호 입력" />
+      <button style="width:100%;" onclick="loginAdmin()">로그인</button>
     </div>
 
-    <div id="adminContent" class="hidden admin-grid">
-      <div>
-        <div class="card between">
-          <div>
-            <h2>실시간 주문</h2>
-            <div class="muted">손님이 주문하면 여기에 바로 뜹니다.</div>
-          </div>
-          <button class="gray" onclick="loadSeedMenu()">기본 메뉴 넣기</button>
+    <div id="adminBox" class="hidden">
+      <div class="card">
+        <h2>실시간 주문</h2>
+        <div class="row">
+          <button onclick="seedMenu()">기본 메뉴 넣기</button>
+          <button class="gray" onclick="testFirebase()">Firebase 연결 테스트</button>
         </div>
-        <div id="orderList"></div>
+        <div id="orderList" class="muted">주문 불러오는 중...</div>
       </div>
 
-      <div>
-        <div class="card">
-          <h2>메뉴 추가/수정</h2>
-          <input id="menuId" type="hidden" />
-          <input id="menuName" placeholder="메뉴명 예: 카스 병맥주" />
-          <div style="height:8px"></div>
-          <input id="menuPrice" type="number" placeholder="가격 예: 5000" />
-          <div style="height:8px"></div>
-          <select id="menuCategory">
-            <option value="맥주">맥주</option>
-            <option value="음료">음료</option>
-            <option value="과자">과자</option>
-            <option value="기타">기타</option>
-          </select>
-          <div style="height:8px"></div>
-          <select id="menuSoldOut">
-            <option value="false">판매중</option>
-            <option value="true">품절</option>
-          </select>
-          <button style="width:100%; margin-top:10px;" onclick="saveMenuItem()">메뉴 저장</button>
-          <button class="gray" style="width:100%; margin-top:8px;" onclick="resetMenuForm()">새 메뉴 입력</button>
-        </div>
+      <div class="card">
+        <h2>메뉴 추가/수정</h2>
+        <input id="editId" type="hidden" />
+        <input id="menuName" placeholder="메뉴명 예: 카스 병맥주" />
+        <input id="menuPrice" type="number" placeholder="가격 예: 5000" />
+        <select id="menuCategory">
+          <option value="맥주">맥주</option>
+          <option value="음료">음료</option>
+          <option value="과자">과자</option>
+          <option value="기타">기타</option>
+        </select>
+        <select id="menuSoldOut">
+          <option value="false">판매중</option>
+          <option value="true">품절</option>
+        </select>
+        <button style="width:100%;" onclick="saveMenu()">메뉴 저장</button>
+        <button class="gray" style="width:100%;" onclick="clearMenuForm()">새 메뉴 입력</button>
+      </div>
 
-        <div class="card">
-          <h2>현재 메뉴</h2>
-          <div id="adminMenuList"></div>
-        </div>
+      <div class="card">
+        <h2>현재 메뉴</h2>
+        <div id="adminMenuList" class="muted">메뉴 불러오는 중...</div>
       </div>
     </div>
-  </section>
+  </div>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getFirestore, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-  // ★★★★★ 여기 Firebase 설정값을 붙여넣어야 실시간 주문이 작동합니다 ★★★★★
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
   const firebaseConfig = {
-  apiKey: "AIzaSyA7J7yCOVWdAo1zLx-AxYGL_dpUmmTZTho",
-  authDomain: "hardrock-ea1db.firebaseapp.com",
-  projectId: "hardrock-ea1db",
-  storageBucket: "hardrock-ea1db.firebasestorage.app",
-  messagingSenderId: "448195527991",
-  appId: "1:448195527991:web:c612b42544b1b43ec1c6b2"
-};
+    apiKey: "AIzaSyA7J7yCOVWdAo1zLx-AxYGL_dpUmmTZTho",
+    authDomain: "hardrock-ea1db.firebaseapp.com",
+    projectId: "hardrock-ea1db",
+    storageBucket: "hardrock-ea1db.firebasestorage.app",
+    messagingSenderId: "448195527991",
+    appId: "1:448195527991:web:c612b42544b1b43ec1c6b2"
+  };
 
   const ADMIN_PASSWORD = "1234";
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const params = new URLSearchParams(location.search);
-  const lane = params.get("lane") || "1";
-  const isAdmin = params.get("admin") === "1";
-
+  let db;
   let menus = [];
   let cart = {};
-  let selectedCategory = "전체";
+  let lane = "1";
 
-  const $ = (id) => document.getElementById(id);
-  const won = (n) => Number(n || 0).toLocaleString("ko-KR") + "원";
+  function $(id) { return document.getElementById(id); }
+  function won(n) { return Number(n || 0).toLocaleString('ko-KR') + '원'; }
 
-  window.goAdmin = () => { location.href = location.pathname + "?admin=1"; };
+  function start() {
+    try {
+      const params = new URLSearchParams(location.search);
+      lane = params.get('lane') || '1';
+      const isAdmin = params.get('admin') === '1';
 
-  if (isAdmin) {
-    $("customerPage").classList.add("hidden");
-    $("adminPage").classList.remove("hidden");
-    $("topInfo").innerText = "관리자 화면";
-  } else {
-    $("laneTitle").innerText = lane;
-    $("topInfo").innerText = lane + "번 레인 손님 화면";
+      $('laneText').innerText = lane;
+
+      if (isAdmin) {
+        $('customerPage').classList.add('hidden');
+        $('adminPage').classList.remove('hidden');
+        $('status').innerHTML = '<span class="ok">관리자 화면 준비 완료</span>';
+      } else {
+        $('status').innerHTML = '<span class="ok">' + lane + '번 레인 손님 화면 준비 완료</span>';
+      }
+
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      $('status').innerHTML += '<br><span class="ok">Firebase 연결 코드 실행됨</span>';
+
+      listenMenus();
+    } catch (error) {
+      $('status').innerHTML = '<span class="bad">초기 실행 오류: ' + error.message + '</span>';
+      alert('초기 실행 오류: ' + error.message);
+    }
   }
 
   function listenMenus() {
-    const q = collection(db, "menus");
-    onSnapshot(q, (snap) => {
-      menus = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.name || '').localeCompare(String(b.name || '')));
-
-      const categories = ["전체", ...new Set(menus.map(m => m.category || "기타"))];
-      if (!categories.includes(selectedCategory)) selectedCategory = "전체";
-
-      renderCustomerMenu();
-      renderAdminMenu();
-    }, (error) => {
-      console.error("메뉴 불러오기 오류:", error);
-      if ($("menuList")) {
-        $("menuList").innerHTML = `<p class="muted">메뉴를 불러오지 못했습니다. Firebase 보안 규칙과 설정값을 확인해주세요.<br>${error.message}</p>`;
-      }
-      if ($("adminMenuList")) {
-        $("adminMenuList").innerHTML = `<p class="muted">메뉴를 불러오지 못했습니다.<br>${error.message}</p>`;
-      }
+    db.collection('menus').onSnapshot(function(snapshot) {
+      menus = [];
+      snapshot.forEach(function(doc) {
+        menus.push({ id: doc.id, ...doc.data() });
+      });
+      menus.sort(function(a,b) {
+        return String(a.category || '').localeCompare(String(b.category || '')) || String(a.name || '').localeCompare(String(b.name || ''));
+      });
+      renderMenus();
+      renderAdminMenus();
+    }, function(error) {
+      $('status').innerHTML += '<br><span class="bad">메뉴 불러오기 실패: ' + error.message + '</span>';
+      $('menuList').innerHTML = '<p class="bad">메뉴 불러오기 실패: ' + error.message + '</p>';
+      if ($('adminMenuList')) $('adminMenuList').innerHTML = '<p class="bad">메뉴 불러오기 실패: ' + error.message + '</p>';
     });
   }
 
   function listenOrders() {
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snap) => {
-      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(function(snapshot) {
+      const orders = [];
+      snapshot.forEach(function(doc) {
+        orders.push({ id: doc.id, ...doc.data() });
+      });
       renderOrders(orders);
+    }, function(error) {
+      $('orderList').innerHTML = '<p class="bad">주문 불러오기 실패: ' + error.message + '</p>';
     });
   }
 
-  function renderCustomerMenu() {
-    const categories = ["전체", ...new Set(menus.map(m => m.category || "기타"))];
-    $("categoryTabs").innerHTML = categories.map(c => `<button class="gray ${selectedCategory === c ? 'active' : ''}" onclick="selectCategory('${c}')">${c}</button>`).join("");
-
-    const list = selectedCategory === "전체" ? menus : menus.filter(m => m.category === selectedCategory);
-    if (list.length === 0) {
-      $("menuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다. 관리자에서 기본 메뉴 넣기를 눌러주세요.<br>현재 선택된 분류: ${selectedCategory} / 전체 메뉴 수: ${menus.length}</p>`;
+  function renderMenus() {
+    if (menus.length === 0) {
+      $('menuList').innerHTML = '<p class="muted">등록된 메뉴가 없습니다. 관리자에서 메뉴를 추가해주세요.</p>';
+      renderCart();
       return;
     }
 
-    $("menuList").innerHTML = list.map(item => `
-      <div class="menu-item">
-        <div class="between">
-          <div>
-            <h3>${item.name}</h3>
-            <div class="muted">${item.category || "기타"} · ${won(item.price)}</div>
-          </div>
-          ${item.soldOut ? '<span class="status cancel">품절</span>' : ''}
-        </div>
-        <div class="qty">
-          <button ${item.soldOut ? 'disabled' : ''} onclick="changeQty('${item.id}', -1)">-</button>
-          <strong id="qty-${item.id}">${cart[item.id] || 0}</strong>
-          <button ${item.soldOut ? 'disabled' : ''} onclick="changeQty('${item.id}', 1)">+</button>
-        </div>
-      </div>
-    `).join("");
+    $('menuList').innerHTML = menus.map(function(item) {
+      return '<div class="item">' +
+        '<h3>' + item.name + '</h3>' +
+        '<div class="muted">' + (item.category || '기타') + ' · ' + won(item.price) + (item.soldOut ? ' · 품절' : '') + '</div>' +
+        '<div class="row" style="margin-top:10px;">' +
+        '<button ' + (item.soldOut ? 'disabled' : '') + ' onclick="changeQty(\'' + item.id + '\', -1)">-</button>' +
+        '<strong>' + (cart[item.id] || 0) + '</strong>' +
+        '<button ' + (item.soldOut ? 'disabled' : '') + ' onclick="changeQty(\'' + item.id + '\', 1)">+</button>' +
+        '</div></div>';
+    }).join('');
     renderCart();
   }
 
-  window.selectCategory = (c) => { selectedCategory = c; renderCustomerMenu(); };
-
-  window.changeQty = (id, diff) => {
-    const now = cart[id] || 0;
-    const next = Math.max(0, now + diff);
-    if (next === 0) delete cart[id]; else cart[id] = next;
-    renderCustomerMenu();
-  };
+  function changeQty(id, diff) {
+    const next = Math.max(0, (cart[id] || 0) + diff);
+    if (next === 0) delete cart[id];
+    else cart[id] = next;
+    renderMenus();
+  }
 
   function renderCart() {
-    const items = Object.keys(cart).map(id => {
+    const items = Object.keys(cart).map(function(id) {
       const menu = menus.find(m => m.id === id);
       return menu ? { ...menu, qty: cart[id] } : null;
     }).filter(Boolean);
 
     if (items.length === 0) {
-      $("cartList").innerHTML = `<span class="muted">선택한 메뉴가 없습니다.</span>`;
-      $("totalPrice").innerText = "0원";
+      $('cartList').innerHTML = '선택한 메뉴가 없습니다.';
+      $('totalText').innerText = '0원';
       return;
     }
 
-    const total = items.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
-    $("cartList").innerHTML = items.map(item => `<div class="cart-line"><span>${item.name} x ${item.qty}</span><strong>${won(item.price * item.qty)}</strong></div>`).join("");
-    $("totalPrice").innerText = won(total);
+    let total = 0;
+    $('cartList').innerHTML = items.map(function(item) {
+      total += Number(item.price) * item.qty;
+      return '<div class="line"><span>' + item.name + ' x ' + item.qty + '</span><strong>' + won(item.price * item.qty) + '</strong></div>';
+    }).join('');
+    $('totalText').innerText = won(total);
   }
 
-  window.submitOrder = async () => {
-    const items = Object.keys(cart).map(id => {
-      const menu = menus.find(m => m.id === id);
-      return menu ? { menuId: id, name: menu.name, price: Number(menu.price), qty: cart[id] } : null;
-    }).filter(Boolean);
+  async function submitOrder() {
+    try {
+      const items = Object.keys(cart).map(function(id) {
+        const menu = menus.find(m => m.id === id);
+        return menu ? { menuId:id, name:menu.name, price:Number(menu.price), qty:cart[id] } : null;
+      }).filter(Boolean);
 
-    if (items.length === 0) {
-      alert("메뉴를 선택해주세요.");
-      return;
+      if (items.length === 0) {
+        alert('메뉴를 선택해주세요.');
+        return;
+      }
+
+      const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      await db.collection('orders').add({
+        lane: lane,
+        items: items,
+        total: total,
+        request: $('requestText').value || '',
+        status: '새 주문',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      cart = {};
+      $('requestText').value = '';
+      renderMenus();
+      alert('주문이 접수되었습니다.');
+    } catch (error) {
+      alert('주문 저장 실패: ' + error.message);
     }
-
-    const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    await addDoc(collection(db, "orders"), {
-      lane,
-      items,
-      total,
-      request: $("requestText").value || "",
-      status: "새 주문",
-      createdAt: serverTimestamp()
-    });
-
-    cart = {};
-    $("requestText").value = "";
-    renderCustomerMenu();
-    $("customerNotice").innerText = "주문이 접수되었습니다. 직원이 확인 후 가져다드립니다.";
-  };
-
-  window.adminLogin = () => {
-    if ($("adminPw").value === ADMIN_PASSWORD) {
-      $("loginBox").classList.add("hidden");
-      $("adminContent").classList.remove("hidden");
-      listenOrders();
-    } else {
-      alert("비밀번호가 틀렸습니다.");
-    }
-  };
-
-  function renderOrders(orders) {
-    if (!$("orderList")) return;
-    const active = orders.filter(o => o.status !== "제공 완료" && o.status !== "취소");
-    const done = orders.filter(o => o.status === "제공 완료" || o.status === "취소").slice(0, 10);
-    const list = [...active, ...done];
-
-    if (list.length === 0) {
-      $("orderList").innerHTML = `<div class="card muted">아직 주문이 없습니다.</div>`;
-      return;
-    }
-
-    $("orderList").innerHTML = list.map(order => `
-      <div class="card">
-        <div class="between">
-          <h2>${order.lane}번 레인</h2>
-          <span class="status ${order.status === '제공 완료' ? 'done' : order.status === '취소' ? 'cancel' : ''}">${order.status || '새 주문'}</span>
-        </div>
-        ${(order.items || []).map(item => `<div class="order-line"><span>${item.name} x ${item.qty}</span><strong>${won(item.price * item.qty)}</strong></div>`).join("")}
-        ${order.request ? `<p class="muted">요청사항: ${order.request}</p>` : ''}
-        <div class="between" style="border-top:1px solid #eee; padding-top:10px; margin-top:10px;"><strong>합계</strong><strong>${won(order.total)}</strong></div>
-        <div class="row" style="margin-top:12px;">
-          <button class="gray" onclick="updateOrderStatus('${order.id}', '접수 완료')">접수</button>
-          <button class="green" onclick="updateOrderStatus('${order.id}', '제공 완료')">제공 완료</button>
-          <button class="red" onclick="updateOrderStatus('${order.id}', '취소')">취소</button>
-          <button class="red" onclick="deleteOrderItem('${order.id}')">삭제</button>
-        </div>
-      </div>
-    `).join("");
   }
 
-  window.updateOrderStatus = async (id, status) => {
-    await updateDoc(doc(db, "orders", id), { status });
-  };
-
-  window.deleteOrderItem = async (id) => {
-    if (confirm("이 주문을 삭제할까요?")) await deleteDoc(doc(db, "orders", id));
-  };
-
-  function renderAdminMenu() {
-    if (!$("adminMenuList")) return;
-    if (menus.length === 0) {
-      $("adminMenuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다.</p>`;
+  function loginAdmin() {
+    if ($('password').value !== ADMIN_PASSWORD) {
+      alert('비밀번호가 틀렸습니다.');
       return;
     }
-    $("adminMenuList").innerHTML = menus.map(item => `
-      <div class="menu-item">
-        <div class="between">
-          <div>
-            <strong>${item.name}</strong>
-            <div class="muted">${item.category} · ${won(item.price)} · ${item.soldOut ? '품절' : '판매중'}</div>
-          </div>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="gray" onclick="editMenu('${item.id}')">수정</button>
-          <button class="red" onclick="deleteMenu('${item.id}')">삭제</button>
-        </div>
-      </div>
-    `).join("");
+    $('loginBox').classList.add('hidden');
+    $('adminBox').classList.remove('hidden');
+    listenOrders();
   }
 
-  window.editMenu = (id) => {
-    const item = menus.find(m => m.id === id);
-    if (!item) return;
-    $("menuId").value = item.id;
-    $("menuName").value = item.name;
-    $("menuPrice").value = item.price;
-    $("menuCategory").value = item.category || "기타";
-    $("menuSoldOut").value = item.soldOut ? "true" : "false";
-  };
+  async function testFirebase() {
+    try {
+      await db.collection('test').add({ message:'연결 테스트', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      alert('Firebase 테스트 저장 성공. Firestore 데이터 탭에 test 컬렉션이 생겨야 합니다.');
+    } catch (error) {
+      alert('Firebase 테스트 저장 실패: ' + error.message);
+    }
+  }
 
-  window.resetMenuForm = () => {
-    $("menuId").value = "";
-    $("menuName").value = "";
-    $("menuPrice").value = "";
-    $("menuCategory").value = "맥주";
-    $("menuSoldOut").value = "false";
-  };
-
-  window.saveMenuItem = async () => {
-    const id = $("menuId").value;
-    const name = $("menuName").value.trim();
-    const price = Number($("menuPrice").value);
-    const category = $("menuCategory").value;
-    const soldOut = $("menuSoldOut").value === "true";
+  async function saveMenu() {
+    const id = $('editId').value;
+    const name = $('menuName').value.trim();
+    const price = Number($('menuPrice').value);
+    const category = $('menuCategory').value;
+    const soldOut = $('menuSoldOut').value === 'true';
 
     if (!name || !price) {
-      alert("메뉴명과 가격을 입력해주세요.");
+      alert('메뉴명과 가격을 입력해주세요.');
       return;
     }
 
     try {
       if (id) {
-        await updateDoc(doc(db, "menus", id), { name, price, category, soldOut });
+        await db.collection('menus').doc(id).update({ name, price, category, soldOut });
       } else {
-        await addDoc(collection(db, "menus"), { name, price, category, soldOut });
+        await db.collection('menus').add({ name, price, category, soldOut });
       }
-
-      alert("메뉴가 Firebase에 저장되었습니다.");
-      resetMenuForm();
+      alert('메뉴가 Firebase에 저장되었습니다.');
+      clearMenuForm();
     } catch (error) {
-      console.error("메뉴 저장 실패:", error);
-      alert("메뉴 저장 실패: " + error.message);
+      alert('메뉴 저장 실패: ' + error.message);
     }
-  };
+  }
 
-  window.deleteMenu = async (id) => {
-    if (confirm("메뉴를 삭제할까요?")) await deleteDoc(doc(db, "menus", id));
-  };
+  function clearMenuForm() {
+    $('editId').value = '';
+    $('menuName').value = '';
+    $('menuPrice').value = '';
+    $('menuCategory').value = '맥주';
+    $('menuSoldOut').value = 'false';
+  }
 
-  window.loadSeedMenu = async () => {
+  function renderAdminMenus() {
+    if (!$('adminMenuList')) return;
+    if (menus.length === 0) {
+      $('adminMenuList').innerHTML = '<p class="muted">등록된 메뉴가 없습니다.</p>';
+      return;
+    }
+
+    $('adminMenuList').innerHTML = menus.map(function(item) {
+      return '<div class="item">' +
+        '<div class="between"><div><strong>' + item.name + '</strong><div class="muted">' + item.category + ' · ' + won(item.price) + ' · ' + (item.soldOut ? '품절' : '판매중') + '</div></div></div>' +
+        '<button class="gray" onclick="editMenu(\'' + item.id + '\')">수정</button>' +
+        '<button class="red" onclick="deleteMenu(\'' + item.id + '\')">삭제</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  function editMenu(id) {
+    const item = menus.find(m => m.id === id);
+    if (!item) return;
+    $('editId').value = item.id;
+    $('menuName').value = item.name;
+    $('menuPrice').value = item.price;
+    $('menuCategory').value = item.category || '기타';
+    $('menuSoldOut').value = item.soldOut ? 'true' : 'false';
+  }
+
+  async function deleteMenu(id) {
+    if (!confirm('메뉴를 삭제할까요?')) return;
+    try {
+      await db.collection('menus').doc(id).delete();
+      alert('메뉴가 삭제되었습니다.');
+    } catch (error) {
+      alert('메뉴 삭제 실패: ' + error.message);
+    }
+  }
+
+  async function seedMenu() {
     try {
       const seed = [
-        { id:"cass", name:"카스 병맥주", price:5000, category:"맥주", soldOut:false },
-        { id:"terra", name:"테라 병맥주", price:5000, category:"맥주", soldOut:false },
-        { id:"cola", name:"콜라", price:2000, category:"음료", soldOut:false },
-        { id:"cider", name:"사이다", price:2000, category:"음료", soldOut:false },
-        { id:"shrimp", name:"새우깡", price:2500, category:"과자", soldOut:false },
-        { id:"pocachip", name:"포카칩", price:3000, category:"과자", soldOut:false }
+        { id:'cass', name:'카스 병맥주', price:5000, category:'맥주', soldOut:false },
+        { id:'terra', name:'테라 병맥주', price:5000, category:'맥주', soldOut:false },
+        { id:'cola', name:'콜라', price:2000, category:'음료', soldOut:false },
+        { id:'cider', name:'사이다', price:2000, category:'음료', soldOut:false },
+        { id:'shrimp', name:'새우깡', price:2500, category:'과자', soldOut:false },
+        { id:'pocachip', name:'포카칩', price:3000, category:'과자', soldOut:false }
       ];
 
       for (const item of seed) {
-        await setDoc(doc(db, "menus", item.id), item);
+        await db.collection('menus').doc(item.id).set(item);
       }
-
-      alert("기본 메뉴가 Firebase에 저장되었습니다.");
+      alert('기본 메뉴가 Firebase에 저장되었습니다.');
     } catch (error) {
-      console.error("기본 메뉴 저장 실패:", error);
-      alert("기본 메뉴 저장 실패: " + error.message);
+      alert('기본 메뉴 저장 실패: ' + error.message);
     }
-  };
+  }
 
-  listenMenus();
+  window.onload = start;
 </script>
 </body>
 </html>
