@@ -308,6 +308,50 @@
     $('menuSoldOut').value = 'false';
   }
 
+  function renderOrders(orders) {
+    if (!$('orderList')) return;
+
+    if (!orders || orders.length === 0) {
+      $('orderList').innerHTML = '<p class="muted">아직 주문이 없습니다.</p>';
+      return;
+    }
+
+    $('orderList').innerHTML = orders.map(function(order) {
+      const itemsHtml = (order.items || []).map(function(item) {
+        return '<div class="line"><span>' + item.name + ' x ' + item.qty + '</span><strong>' + won(item.price * item.qty) + '</strong></div>';
+      }).join('');
+
+      return '<div class="item">' +
+        '<div class="between"><h3>' + order.lane + '번 레인</h3><strong>' + (order.status || '새 주문') + '</strong></div>' +
+        itemsHtml +
+        (order.request ? '<p class="muted">요청사항: ' + order.request + '</p>' : '') +
+        '<div class="between"><strong>합계</strong><strong>' + won(order.total) + '</strong></div>' +
+        '<div class="row" style="margin-top:10px;">' +
+        '<button class="gray" onclick="updateOrder(\'' + order.id + '\', \'접수 완료\')">접수</button>' +
+        '<button class="green" onclick="updateOrder(\'' + order.id + '\', \'제공 완료\')">제공 완료</button>' +
+        '<button class="red" onclick="deleteOrder(\'' + order.id + '\')">삭제</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  async function updateOrder(id, status) {
+    try {
+      await db.collection('orders').doc(id).update({ status: status });
+    } catch (error) {
+      alert('주문 상태 변경 실패: ' + error.message);
+    }
+  }
+
+  async function deleteOrder(id) {
+    if (!confirm('주문을 삭제할까요?')) return;
+    try {
+      await db.collection('orders').doc(id).delete();
+    } catch (error) {
+      alert('주문 삭제 실패: ' + error.message);
+    }
+  }
+
   function renderAdminMenus() {
     if (!$('adminMenuList')) return;
     if (menus.length === 0) {
