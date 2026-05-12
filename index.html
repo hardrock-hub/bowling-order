@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>볼링장 QR 주문</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      background: black;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #cart {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>볼링장 QR 주문</h1>
+  <p id="laneInfo"></p>
+
+  <div id="menu"></div>
+
+  <div id="cart">
+    <h2>주문 내역</h2>
+    <ul id="cartList"></ul>
+    <p><strong>총 금액: <span id="total">0</span>원</strong></p>
+    <button onclick="submitOrder()">주문하기</button>
+  </div>
+</div>
+
+<script>
+const menuItems = [
+  { name: "카스 병맥주", price: 5000 },
+  { name: "테라 병맥주", price: 5000 },
+  { name: "콜라", price: 2000 },
+  { name: "사이다", price: 2000 },
+  { name: "새우깡", price: 2500 },
+  { name: "포카칩", price: 3000 }
+];
+
+let cart = [];
+
+const urlParams = new URLSearchParams(window.location.search);
+const lane = urlParams.get('lane') || '1';
+document.getElementById('laneInfo').innerText = lane + '번 레인 주문';
+
+function renderMenu() {
+  const menuDiv = document.getElementById('menu');
+
+  menuItems.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'menu-item';
+    div.innerHTML = `
+      <span>${item.name} - ${item.price}원</span>
+      <button onclick="addToCart(${index})">추가</button>
+    `;
+    menuDiv.appendChild(div);
+  });
+}
+
+function addToCart(index) {
+  cart.push(menuItems[index]);
+  renderCart();
+}
+
+function renderCart() {
+  const cartList = document.getElementById('cartList');
+  const total = document.getElementById('total');
+
+  cartList.innerHTML = '';
+
+  let totalPrice = 0;
+
+  cart.forEach(item => {
+    const li = document.createElement('li');
+    li.innerText = item.name + ' - ' + item.price + '원';
+    cartList.appendChild(li);
+    totalPrice += item.price;
+  });
+
+  total.innerText = totalPrice;
+}
+
+function submitOrder() {
+  if(cart.length === 0) {
+    alert('메뉴를 선택해주세요');
+    return;
+  }
+
+  alert(lane + '번 레인 주문이 접수되었습니다!');
+  cart = [];
+  renderCart();
+}
+
+renderMenu();
+</script>
+
+</body>
+</html>
