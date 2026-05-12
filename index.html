@@ -162,9 +162,11 @@
   }
 
   function listenMenus() {
-    const q = query(collection(db, "menus"), orderBy("category"), orderBy("name"));
+    const q = collection(db, "menus");
     onSnapshot(q, (snap) => {
-      menus = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      menus = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.name || '').localeCompare(String(b.name || '')));
       renderCustomerMenu();
       renderAdminMenu();
     });
