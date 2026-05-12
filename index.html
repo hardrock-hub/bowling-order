@@ -1,131 +1,393 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>볼링장 QR 주문</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>볼링장 QR 실시간 주문</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-    }
-    h1 {
-      text-align: center;
-    }
-    .menu-item {
-      display: flex;
-      justify-content: space-between;
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    button {
-      background: black;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #cart {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #ddd;
-    }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background:#f4f4f5; margin:0; padding:16px; color:#18181b; }
+    .wrap { max-width:1000px; margin:0 auto; }
+    .card { background:white; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+    h1,h2,h3 { margin:0 0 10px; }
+    .muted { color:#71717a; font-size:14px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .between { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    button { border:0; border-radius:12px; padding:10px 14px; cursor:pointer; font-weight:700; background:#18181b; color:white; }
+    button.gray { background:#e4e4e7; color:#18181b; }
+    button.red { background:#fee2e2; color:#b91c1c; }
+    button.green { background:#dcfce7; color:#166534; }
+    input, select, textarea { width:100%; border:1px solid #d4d4d8; border-radius:12px; padding:11px; font-size:16px; }
+    textarea { min-height:75px; resize:vertical; }
+    .menu-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+    .menu-item { border:1px solid #e4e4e7; border-radius:16px; padding:14px; }
+    .qty { display:flex; gap:8px; align-items:center; margin-top:10px; }
+    .qty button { width:38px; height:38px; padding:0; border-radius:50%; }
+    .cart-line, .order-line { display:flex; justify-content:space-between; gap:10px; margin:8px 0; }
+    .tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+    .tabs button.active { background:#18181b; color:white; }
+    .status { display:inline-block; border-radius:999px; padding:5px 10px; font-size:13px; font-weight:700; background:#fef3c7; color:#92400e; }
+    .status.done { background:#dcfce7; color:#166534; }
+    .status.cancel { background:#fee2e2; color:#991b1b; }
+    .hidden { display:none; }
+    .admin-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+    @media(min-width:850px){ .admin-grid { grid-template-columns:1.2fr .8fr; } }
   </style>
 </head>
 <body>
-
-<div class="container">
-  <h1>볼링장 QR 주문</h1>
-  <p id="laneInfo"></p>
-
-  <div id="menu"></div>
-
-  <div id="cart">
-    <h2>주문 내역</h2>
-    <ul id="cartList"></ul>
-    <p><strong>총 금액: <span id="total">0</span>원</strong></p>
-    <button onclick="submitOrder()">주문하기</button>
+<div class="wrap">
+  <div class="card between">
+    <div>
+      <h1>볼링장 QR 주문</h1>
+      <div class="muted" id="topInfo">불러오는 중...</div>
+    </div>
+    <button class="gray" onclick="goAdmin()">관리자</button>
   </div>
+
+  <section id="customerPage">
+    <div class="card">
+      <h2><span id="laneTitle">1</span>번 레인 주문</h2>
+      <div class="muted">메뉴를 선택하고 주문하기를 눌러주세요. 결제는 카운터에서 진행됩니다.</div>
+    </div>
+
+    <div class="card">
+      <div class="tabs" id="categoryTabs"></div>
+      <div class="menu-grid" id="menuList"></div>
+    </div>
+
+    <div class="card">
+      <h2>주문 내역</h2>
+      <div id="cartList" class="muted">선택한 메뉴가 없습니다.</div>
+      <textarea id="requestText" placeholder="요청사항 예: 얼음컵 주세요"></textarea>
+      <div class="between" style="margin-top:12px;">
+        <strong>총 금액</strong>
+        <strong id="totalPrice">0원</strong>
+      </div>
+      <button style="width:100%; margin-top:12px; padding:15px;" onclick="submitOrder()">주문하기</button>
+      <p class="muted" id="customerNotice"></p>
+    </div>
+  </section>
+
+  <section id="adminPage" class="hidden">
+    <div id="loginBox" class="card">
+      <h2>관리자 로그인</h2>
+      <p class="muted">초기 비밀번호는 <b>1234</b> 입니다. 코드 안의 ADMIN_PASSWORD 값을 바꾸면 됩니다.</p>
+      <input id="adminPw" type="password" placeholder="관리자 비밀번호" />
+      <button style="width:100%; margin-top:10px;" onclick="adminLogin()">로그인</button>
+    </div>
+
+    <div id="adminContent" class="hidden admin-grid">
+      <div>
+        <div class="card between">
+          <div>
+            <h2>실시간 주문</h2>
+            <div class="muted">손님이 주문하면 여기에 바로 뜹니다.</div>
+          </div>
+          <button class="gray" onclick="loadSeedMenu()">기본 메뉴 넣기</button>
+        </div>
+        <div id="orderList"></div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>메뉴 추가/수정</h2>
+          <input id="menuId" type="hidden" />
+          <input id="menuName" placeholder="메뉴명 예: 카스 병맥주" />
+          <div style="height:8px"></div>
+          <input id="menuPrice" type="number" placeholder="가격 예: 5000" />
+          <div style="height:8px"></div>
+          <select id="menuCategory">
+            <option value="맥주">맥주</option>
+            <option value="음료">음료</option>
+            <option value="과자">과자</option>
+            <option value="기타">기타</option>
+          </select>
+          <div style="height:8px"></div>
+          <select id="menuSoldOut">
+            <option value="false">판매중</option>
+            <option value="true">품절</option>
+          </select>
+          <button style="width:100%; margin-top:10px;" onclick="saveMenuItem()">메뉴 저장</button>
+          <button class="gray" style="width:100%; margin-top:8px;" onclick="resetMenuForm()">새 메뉴 입력</button>
+        </div>
+
+        <div class="card">
+          <h2>현재 메뉴</h2>
+          <div id="adminMenuList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
-<script>
-const menuItems = [
-  { name: "카스 병맥주", price: 5000 },
-  { name: "테라 병맥주", price: 5000 },
-  { name: "콜라", price: 2000 },
-  { name: "사이다", price: 2000 },
-  { name: "새우깡", price: 2500 },
-  { name: "포카칩", price: 3000 }
-];
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getFirestore, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-let cart = [];
+  // ★★★★★ 여기 Firebase 설정값을 붙여넣어야 실시간 주문이 작동합니다 ★★★★★
+  const firebaseConfig = {
+  apiKey: "AIzaSyA7J7yCOVWdAo1zLx-AxYGL_dpUmmTZTho",
+  authDomain: "hardrock-ea1db.firebaseapp.com",
+  projectId: "hardrock-ea1db",
+  storageBucket: "hardrock-ea1db.firebasestorage.app",
+  messagingSenderId: "448195527991",
+  appId: "1:448195527991:web:c612b42544b1b43ec1c6b2"
+};
 
-const urlParams = new URLSearchParams(window.location.search);
-const lane = urlParams.get('lane') || '1';
-document.getElementById('laneInfo').innerText = lane + '번 레인 주문';
+  const ADMIN_PASSWORD = "1234";
 
-function renderMenu() {
-  const menuDiv = document.getElementById('menu');
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  menuItems.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'menu-item';
-    div.innerHTML = `
-      <span>${item.name} - ${item.price}원</span>
-      <button onclick="addToCart(${index})">추가</button>
-    `;
-    menuDiv.appendChild(div);
-  });
-}
+  const params = new URLSearchParams(location.search);
+  const lane = params.get("lane") || "1";
+  const isAdmin = params.get("admin") === "1";
 
-function addToCart(index) {
-  cart.push(menuItems[index]);
-  renderCart();
-}
+  let menus = [];
+  let cart = {};
+  let selectedCategory = "전체";
 
-function renderCart() {
-  const cartList = document.getElementById('cartList');
-  const total = document.getElementById('total');
+  const $ = (id) => document.getElementById(id);
+  const won = (n) => Number(n || 0).toLocaleString("ko-KR") + "원";
 
-  cartList.innerHTML = '';
+  window.goAdmin = () => { location.href = location.pathname + "?admin=1"; };
 
-  let totalPrice = 0;
-
-  cart.forEach(item => {
-    const li = document.createElement('li');
-    li.innerText = item.name + ' - ' + item.price + '원';
-    cartList.appendChild(li);
-    totalPrice += item.price;
-  });
-
-  total.innerText = totalPrice;
-}
-
-function submitOrder() {
-  if(cart.length === 0) {
-    alert('메뉴를 선택해주세요');
-    return;
+  if (isAdmin) {
+    $("customerPage").classList.add("hidden");
+    $("adminPage").classList.remove("hidden");
+    $("topInfo").innerText = "관리자 화면";
+  } else {
+    $("laneTitle").innerText = lane;
+    $("topInfo").innerText = lane + "번 레인 손님 화면";
   }
 
-  alert(lane + '번 레인 주문이 접수되었습니다!');
-  cart = [];
-  renderCart();
-}
+  function listenMenus() {
+    const q = query(collection(db, "menus"), orderBy("category"), orderBy("name"));
+    onSnapshot(q, (snap) => {
+      menus = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderCustomerMenu();
+      renderAdminMenu();
+    });
+  }
 
-renderMenu();
+  function listenOrders() {
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snap) => {
+      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderOrders(orders);
+    });
+  }
+
+  function renderCustomerMenu() {
+    const categories = ["전체", ...new Set(menus.map(m => m.category || "기타"))];
+    $("categoryTabs").innerHTML = categories.map(c => `<button class="gray ${selectedCategory === c ? 'active' : ''}" onclick="selectCategory('${c}')">${c}</button>`).join("");
+
+    const list = selectedCategory === "전체" ? menus : menus.filter(m => m.category === selectedCategory);
+    if (list.length === 0) {
+      $("menuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다. 관리자에서 기본 메뉴 넣기를 눌러주세요.</p>`;
+      return;
+    }
+
+    $("menuList").innerHTML = list.map(item => `
+      <div class="menu-item">
+        <div class="between">
+          <div>
+            <h3>${item.name}</h3>
+            <div class="muted">${item.category || "기타"} · ${won(item.price)}</div>
+          </div>
+          ${item.soldOut ? '<span class="status cancel">품절</span>' : ''}
+        </div>
+        <div class="qty">
+          <button ${item.soldOut ? 'disabled' : ''} onclick="changeQty('${item.id}', -1)">-</button>
+          <strong id="qty-${item.id}">${cart[item.id] || 0}</strong>
+          <button ${item.soldOut ? 'disabled' : ''} onclick="changeQty('${item.id}', 1)">+</button>
+        </div>
+      </div>
+    `).join("");
+    renderCart();
+  }
+
+  window.selectCategory = (c) => { selectedCategory = c; renderCustomerMenu(); };
+
+  window.changeQty = (id, diff) => {
+    const now = cart[id] || 0;
+    const next = Math.max(0, now + diff);
+    if (next === 0) delete cart[id]; else cart[id] = next;
+    renderCustomerMenu();
+  };
+
+  function renderCart() {
+    const items = Object.keys(cart).map(id => {
+      const menu = menus.find(m => m.id === id);
+      return menu ? { ...menu, qty: cart[id] } : null;
+    }).filter(Boolean);
+
+    if (items.length === 0) {
+      $("cartList").innerHTML = `<span class="muted">선택한 메뉴가 없습니다.</span>`;
+      $("totalPrice").innerText = "0원";
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
+    $("cartList").innerHTML = items.map(item => `<div class="cart-line"><span>${item.name} x ${item.qty}</span><strong>${won(item.price * item.qty)}</strong></div>`).join("");
+    $("totalPrice").innerText = won(total);
+  }
+
+  window.submitOrder = async () => {
+    const items = Object.keys(cart).map(id => {
+      const menu = menus.find(m => m.id === id);
+      return menu ? { menuId: id, name: menu.name, price: Number(menu.price), qty: cart[id] } : null;
+    }).filter(Boolean);
+
+    if (items.length === 0) {
+      alert("메뉴를 선택해주세요.");
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    await addDoc(collection(db, "orders"), {
+      lane,
+      items,
+      total,
+      request: $("requestText").value || "",
+      status: "새 주문",
+      createdAt: serverTimestamp()
+    });
+
+    cart = {};
+    $("requestText").value = "";
+    renderCustomerMenu();
+    $("customerNotice").innerText = "주문이 접수되었습니다. 직원이 확인 후 가져다드립니다.";
+  };
+
+  window.adminLogin = () => {
+    if ($("adminPw").value === ADMIN_PASSWORD) {
+      $("loginBox").classList.add("hidden");
+      $("adminContent").classList.remove("hidden");
+      listenOrders();
+    } else {
+      alert("비밀번호가 틀렸습니다.");
+    }
+  };
+
+  function renderOrders(orders) {
+    if (!$("orderList")) return;
+    const active = orders.filter(o => o.status !== "제공 완료" && o.status !== "취소");
+    const done = orders.filter(o => o.status === "제공 완료" || o.status === "취소").slice(0, 10);
+    const list = [...active, ...done];
+
+    if (list.length === 0) {
+      $("orderList").innerHTML = `<div class="card muted">아직 주문이 없습니다.</div>`;
+      return;
+    }
+
+    $("orderList").innerHTML = list.map(order => `
+      <div class="card">
+        <div class="between">
+          <h2>${order.lane}번 레인</h2>
+          <span class="status ${order.status === '제공 완료' ? 'done' : order.status === '취소' ? 'cancel' : ''}">${order.status || '새 주문'}</span>
+        </div>
+        ${(order.items || []).map(item => `<div class="order-line"><span>${item.name} x ${item.qty}</span><strong>${won(item.price * item.qty)}</strong></div>`).join("")}
+        ${order.request ? `<p class="muted">요청사항: ${order.request}</p>` : ''}
+        <div class="between" style="border-top:1px solid #eee; padding-top:10px; margin-top:10px;"><strong>합계</strong><strong>${won(order.total)}</strong></div>
+        <div class="row" style="margin-top:12px;">
+          <button class="gray" onclick="updateOrderStatus('${order.id}', '접수 완료')">접수</button>
+          <button class="green" onclick="updateOrderStatus('${order.id}', '제공 완료')">제공 완료</button>
+          <button class="red" onclick="updateOrderStatus('${order.id}', '취소')">취소</button>
+          <button class="red" onclick="deleteOrderItem('${order.id}')">삭제</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  window.updateOrderStatus = async (id, status) => {
+    await updateDoc(doc(db, "orders", id), { status });
+  };
+
+  window.deleteOrderItem = async (id) => {
+    if (confirm("이 주문을 삭제할까요?")) await deleteDoc(doc(db, "orders", id));
+  };
+
+  function renderAdminMenu() {
+    if (!$("adminMenuList")) return;
+    if (menus.length === 0) {
+      $("adminMenuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다.</p>`;
+      return;
+    }
+    $("adminMenuList").innerHTML = menus.map(item => `
+      <div class="menu-item">
+        <div class="between">
+          <div>
+            <strong>${item.name}</strong>
+            <div class="muted">${item.category} · ${won(item.price)} · ${item.soldOut ? '품절' : '판매중'}</div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="gray" onclick="editMenu('${item.id}')">수정</button>
+          <button class="red" onclick="deleteMenu('${item.id}')">삭제</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  window.editMenu = (id) => {
+    const item = menus.find(m => m.id === id);
+    if (!item) return;
+    $("menuId").value = item.id;
+    $("menuName").value = item.name;
+    $("menuPrice").value = item.price;
+    $("menuCategory").value = item.category || "기타";
+    $("menuSoldOut").value = item.soldOut ? "true" : "false";
+  };
+
+  window.resetMenuForm = () => {
+    $("menuId").value = "";
+    $("menuName").value = "";
+    $("menuPrice").value = "";
+    $("menuCategory").value = "맥주";
+    $("menuSoldOut").value = "false";
+  };
+
+  window.saveMenuItem = async () => {
+    const id = $("menuId").value;
+    const name = $("menuName").value.trim();
+    const price = Number($("menuPrice").value);
+    const category = $("menuCategory").value;
+    const soldOut = $("menuSoldOut").value === "true";
+
+    if (!name || !price) {
+      alert("메뉴명과 가격을 입력해주세요.");
+      return;
+    }
+
+    if (id) {
+      await updateDoc(doc(db, "menus", id), { name, price, category, soldOut });
+    } else {
+      await addDoc(collection(db, "menus"), { name, price, category, soldOut });
+    }
+    resetMenuForm();
+  };
+
+  window.deleteMenu = async (id) => {
+    if (confirm("메뉴를 삭제할까요?")) await deleteDoc(doc(db, "menus", id));
+  };
+
+  window.loadSeedMenu = async () => {
+    const seed = [
+      { id:"cass", name:"카스 병맥주", price:5000, category:"맥주", soldOut:false },
+      { id:"terra", name:"테라 병맥주", price:5000, category:"맥주", soldOut:false },
+      { id:"cola", name:"콜라", price:2000, category:"음료", soldOut:false },
+      { id:"cider", name:"사이다", price:2000, category:"음료", soldOut:false },
+      { id:"shrimp", name:"새우깡", price:2500, category:"과자", soldOut:false },
+      { id:"pocachip", name:"포카칩", price:3000, category:"과자", soldOut:false }
+    ];
+    for (const item of seed) {
+      await setDoc(doc(db, "menus", item.id), item);
+    }
+    alert("기본 메뉴가 등록되었습니다.");
+  };
+
+  listenMenus();
 </script>
-
 </body>
 </html>
