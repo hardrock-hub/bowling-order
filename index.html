@@ -198,7 +198,7 @@
     renderCart();
   }
 
-  function changeQty(id, diff) {
+  window.changeQty = function(id, diff) {
     const next = Math.max(0, (cart[id] || 0) + diff);
     if (next === 0) delete cart[id];
     else cart[id] = next;
@@ -225,7 +225,7 @@
     $('totalText').innerText = won(total);
   }
 
-  async function submitOrder() {
+  window.submitOrder = async function() {
     try {
       const items = Object.keys(cart).map(function(id) {
         const menu = menus.find(m => m.id === id);
@@ -256,7 +256,7 @@
     }
   }
 
-  function loginAdmin() {
+  window.loginAdmin = function() {
     if ($('password').value !== ADMIN_PASSWORD) {
       alert('비밀번호가 틀렸습니다.');
       return;
@@ -266,7 +266,7 @@
     listenOrders();
   }
 
-  async function testFirebase() {
+  window.testFirebase = async function() {
     try {
       await db.collection('test').add({ message:'연결 테스트', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       alert('Firebase 테스트 저장 성공. Firestore 데이터 탭에 test 컬렉션이 생겨야 합니다.');
@@ -275,7 +275,7 @@
     }
   }
 
-  async function saveMenu() {
+  window.saveMenu = async function() {
     const id = $('editId').value;
     const name = $('menuName').value.trim();
     const price = Number($('menuPrice').value);
@@ -300,7 +300,7 @@
     }
   }
 
-  function clearMenuForm() {
+  window.clearMenuForm = function() {
     $('editId').value = '';
     $('menuName').value = '';
     $('menuPrice').value = '';
@@ -335,7 +335,7 @@
     }).join('');
   }
 
-  async function updateOrder(id, status) {
+  window.updateOrder = async function(id, status) {
     try {
       await db.collection('orders').doc(id).update({ status: status });
     } catch (error) {
@@ -343,7 +343,7 @@
     }
   }
 
-  async function deleteOrder(id) {
+  window.deleteOrder = async function(id) {
     if (!confirm('주문을 삭제할까요?')) return;
     try {
       await db.collection('orders').doc(id).delete();
@@ -368,7 +368,7 @@
     }).join('');
   }
 
-  function editMenu(id) {
+  window.editMenu = function(id) {
     const item = menus.find(m => m.id === id);
     if (!item) return;
     $('editId').value = item.id;
@@ -378,7 +378,7 @@
     $('menuSoldOut').value = item.soldOut ? 'true' : 'false';
   }
 
-  async function deleteMenu(id) {
+  window.deleteMenu = async function(id) {
     if (!confirm('메뉴를 삭제할까요?')) return;
     try {
       await db.collection('menus').doc(id).delete();
@@ -388,7 +388,7 @@
     }
   }
 
-  async function seedMenu() {
+  window.seedMenu = async function() {
     try {
       const seed = [
         { id:'cass', name:'카스 병맥주', price:5000, category:'맥주', soldOut:false },
