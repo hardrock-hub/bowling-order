@@ -167,8 +167,20 @@
       menus = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.name || '').localeCompare(String(b.name || '')));
+
+      const categories = ["전체", ...new Set(menus.map(m => m.category || "기타"))];
+      if (!categories.includes(selectedCategory)) selectedCategory = "전체";
+
       renderCustomerMenu();
       renderAdminMenu();
+    }, (error) => {
+      console.error("메뉴 불러오기 오류:", error);
+      if ($("menuList")) {
+        $("menuList").innerHTML = `<p class="muted">메뉴를 불러오지 못했습니다. Firebase 보안 규칙과 설정값을 확인해주세요.<br>${error.message}</p>`;
+      }
+      if ($("adminMenuList")) {
+        $("adminMenuList").innerHTML = `<p class="muted">메뉴를 불러오지 못했습니다.<br>${error.message}</p>`;
+      }
     });
   }
 
@@ -186,7 +198,7 @@
 
     const list = selectedCategory === "전체" ? menus : menus.filter(m => m.category === selectedCategory);
     if (list.length === 0) {
-      $("menuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다. 관리자에서 기본 메뉴 넣기를 눌러주세요.</p>`;
+      $("menuList").innerHTML = `<p class="muted">등록된 메뉴가 없습니다. 관리자에서 기본 메뉴 넣기를 눌러주세요.<br>현재 선택된 분류: ${selectedCategory} / 전체 메뉴 수: ${menus.length}</p>`;
       return;
     }
 
@@ -362,12 +374,19 @@
       return;
     }
 
-    if (id) {
-      await updateDoc(doc(db, "menus", id), { name, price, category, soldOut });
-    } else {
-      await addDoc(collection(db, "menus"), { name, price, category, soldOut });
+    try {
+      if (id) {
+        await updateDoc(doc(db, "menus", id), { name, price, category, soldOut });
+      } else {
+        await addDoc(collection(db, "menus"), { name, price, category, soldOut });
+      }
+
+      alert("메뉴가 Firebase에 저장되었습니다.");
+      resetMenuForm();
+    } catch (error) {
+      console.error("메뉴 저장 실패:", error);
+      alert("메뉴 저장 실패: " + error.message);
     }
-    resetMenuForm();
   };
 
   window.deleteMenu = async (id) => {
@@ -375,18 +394,25 @@
   };
 
   window.loadSeedMenu = async () => {
-    const seed = [
-      { id:"cass", name:"카스 병맥주", price:5000, category:"맥주", soldOut:false },
-      { id:"terra", name:"테라 병맥주", price:5000, category:"맥주", soldOut:false },
-      { id:"cola", name:"콜라", price:2000, category:"음료", soldOut:false },
-      { id:"cider", name:"사이다", price:2000, category:"음료", soldOut:false },
-      { id:"shrimp", name:"새우깡", price:2500, category:"과자", soldOut:false },
-      { id:"pocachip", name:"포카칩", price:3000, category:"과자", soldOut:false }
-    ];
-    for (const item of seed) {
-      await setDoc(doc(db, "menus", item.id), item);
+    try {
+      const seed = [
+        { id:"cass", name:"카스 병맥주", price:5000, category:"맥주", soldOut:false },
+        { id:"terra", name:"테라 병맥주", price:5000, category:"맥주", soldOut:false },
+        { id:"cola", name:"콜라", price:2000, category:"음료", soldOut:false },
+        { id:"cider", name:"사이다", price:2000, category:"음료", soldOut:false },
+        { id:"shrimp", name:"새우깡", price:2500, category:"과자", soldOut:false },
+        { id:"pocachip", name:"포카칩", price:3000, category:"과자", soldOut:false }
+      ];
+
+      for (const item of seed) {
+        await setDoc(doc(db, "menus", item.id), item);
+      }
+
+      alert("기본 메뉴가 Firebase에 저장되었습니다.");
+    } catch (error) {
+      console.error("기본 메뉴 저장 실패:", error);
+      alert("기본 메뉴 저장 실패: " + error.message);
     }
-    alert("기본 메뉴가 등록되었습니다.");
   };
 
   listenMenus();
